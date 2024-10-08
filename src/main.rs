@@ -1,5 +1,6 @@
 use nanoid::nanoid;
-use rocket::{post, get, routes, State};
+use rocket::{post, get, routes, State, FromForm};
+use rocket::form::Form;
 use rocket::http::Status;
 use rocket::response::{status, Redirect};
 use rocket_dyn_templates::Template;
@@ -17,25 +18,41 @@ struct StoredURL {
     url: String,
 }
 
-#[derive(Deserialize)]
+#[derive(FromForm)]
 struct UrlForm {
     url: String,
 }
 
+#[post("/shorten_form", data="<data>")]
+async fn shorten_form(data: Form<UrlForm>, state: &State<AppState>) -> Result<String, status::Custom<String>> {
+    let id = &nanoid!(10);
+
+    let parsed_url = Url::parse(&data.url).map_err(|err| {
+        status::Custom(
+            Status::UnprocessableEntity,
+            format!("url validation failed: {err}")
+        )
+    })?;
+
+    let _result = sqlx::query("INSERT INTO urls (id, url) VALUES ($1, $2)")
+        .bind(id)
+        .bind(parsed_url.as_str())
+        .execute(&state.pool)
+        .await
+        .map_err(|_err| {
+            status::Custom(
+                Status::InternalServerError,
+                "Soethin went wrong, Sowwy".into(),
+            )
+        })?;
+
+    Ok(format!("https://short-cli.shuttleapp.rs/rec/{id}"))
+}
+
+
 #[post("/shorten", data="<data>")]
 async fn shorten(data: String, state: &State<AppState>) -> Result<String, status::Custom<String>> {
     let id = &nanoid!(10);
-
-    let data = match serde_json::from_str::<UrlForm>(&*data) {
-        Ok(json) => {
-            json.url
-        },
-        Err(_) => {
-            data
-        }
-    };
-
-    println!("{}", &data);
 
     let parsed_url = Url::parse(&data).map_err(|err| {
         status::Custom(
@@ -93,7 +110,7 @@ async fn main(#[shuttle_shared_db::Postgres] pool: PgPool) -> shuttle_rocket::Sh
     let state = AppState { pool };
 
     let rocket = rocket::build()
-        .mount("/", routes![index, shorten, recall])
+        .mount("/", routes![index, shorten, shorten_form, recall])
         .attach(Template::fairing())
         .manage(state);
 

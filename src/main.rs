@@ -6,7 +6,7 @@ use rocket::response::{status, Redirect};
 use rocket_dyn_templates::Template;
 use sqlx::{FromRow, PgPool};
 use url::Url;
-use serde::{Deserialize, Serialize};
+use serde::{Serialize};
 
 struct AppState {
     pool: PgPool,

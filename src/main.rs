@@ -35,6 +35,8 @@ async fn shorten(data: String, state: &State<AppState>) -> Result<String, status
         }
     };
 
+    println!("{}", &data);
+
     let parsed_url = Url::parse(&data).map_err(|err| {
         status::Custom(
             Status::UnprocessableEntity,

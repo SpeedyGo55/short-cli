@@ -1,5 +1,5 @@
 -- Add migration script here
 CREATE TABLE urls (
-                      id VARCHAR(6) PRIMARY KEY,
+                      id VARCHAR(10) PRIMARY KEY,
                       url VARCHAR NOT NULL
 );

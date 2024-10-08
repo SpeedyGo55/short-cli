@@ -18,7 +18,7 @@ struct StoredURL {
 
 #[post("/shorten", data="<data>")]
 async fn shorten(data: String, state: &State<AppState>) -> Result<String, status::Custom<String>> {
-    let id = &nanoid!(6);
+    let id = &nanoid!(10);
 
     let parsed_url = Url::parse(&data).map_err(|err| {
         status::Custom(

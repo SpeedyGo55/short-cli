@@ -5,7 +5,7 @@ use rocket::response::{status, Redirect};
 use rocket_dyn_templates::Template;
 use sqlx::{FromRow, PgPool};
 use url::Url;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 struct AppState {
     pool: PgPool,
@@ -17,9 +17,23 @@ struct StoredURL {
     url: String,
 }
 
+#[derive(Deserialize)]
+struct UrlForm {
+    url: String,
+}
+
 #[post("/shorten", data="<data>")]
 async fn shorten(data: String, state: &State<AppState>) -> Result<String, status::Custom<String>> {
     let id = &nanoid!(10);
+
+    let data = match serde_json::from_str::<UrlForm>(&*data) {
+        Ok(json) => {
+            json.url
+        },
+        Err(_) => {
+            data
+        }
+    };
 
     let parsed_url = Url::parse(&data).map_err(|err| {
         status::Custom(

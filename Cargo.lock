@@ -2492,6 +2492,7 @@ dependencies = [
  "rocket",
  "rocket_dyn_templates",
  "serde",
+ "serde_json",
  "shuttle-rocket",
  "shuttle-runtime",
  "shuttle-shared-db",

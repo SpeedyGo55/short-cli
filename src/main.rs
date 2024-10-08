@@ -2,6 +2,7 @@ use nanoid::nanoid;
 use rocket::{post, get, routes, State};
 use rocket::http::Status;
 use rocket::response::{status, Redirect};
+use rocket_dyn_templates::Template;
 use sqlx::{FromRow, PgPool};
 use url::Url;
 use serde::Serialize;
@@ -32,7 +33,7 @@ async fn shorten(data: String, state: &State<AppState>) -> Result<String, status
         .bind(parsed_url.as_str())
         .execute(&state.pool)
         .await
-        .map_err(|err| {
+        .map_err(|_err| {
             status::Custom(
                 Status::InternalServerError,
                 "Soethin went wrong, Sowwy".into(),
@@ -61,6 +62,11 @@ async fn recall(id: String, state: &State<AppState>) -> Result<Redirect, status:
     Ok(Redirect::to(url.url))
 }
 
+#[get("/")]
+fn index() -> Template {
+    Template::render("index", ())
+}
+
 #[shuttle_runtime::main]
 async fn main(#[shuttle_shared_db::Postgres] pool: PgPool) -> shuttle_rocket::ShuttleRocket {
     sqlx::migrate!()
@@ -71,7 +77,8 @@ async fn main(#[shuttle_shared_db::Postgres] pool: PgPool) -> shuttle_rocket::Sh
     let state = AppState { pool };
 
     let rocket = rocket::build()
-        .mount("/", routes![shorten, recall])
+        .mount("/", routes![index, shorten, recall])
+        .attach(Template::fairing())
         .manage(state);
 
     Ok(rocket.into())

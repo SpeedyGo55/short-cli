@@ -32,10 +32,10 @@ async fn shorten(data: String, state: &State<AppState>) -> Result<String, status
         .bind(parsed_url.as_str())
         .execute(&state.pool)
         .await
-        .map_err(|_| {
+        .map_err(|err| {
             status::Custom(
                 Status::InternalServerError,
-                "somethin went wrong, sowwy".into(),
+                format!("{err}").into(),
             )
         })?;
 

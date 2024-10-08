@@ -35,7 +35,7 @@ async fn shorten(data: String, state: &State<AppState>) -> Result<String, status
         .map_err(|err| {
             status::Custom(
                 Status::InternalServerError,
-                format!("{err}").into(),
+                "Soethin went wrong, Sowwy".into(),
             )
         })?;
 

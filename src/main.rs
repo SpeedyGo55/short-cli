@@ -63,7 +63,7 @@ async fn recall(id: String, state: &State<AppState>) -> Result<Redirect, status:
 
 #[shuttle_runtime::main]
 async fn main(#[shuttle_shared_db::Postgres] pool: PgPool) -> shuttle_rocket::ShuttleRocket {
-    sqlx::migrate!("/short-cli/migrations")
+    sqlx::migrate!("/opt/shuttle/shuttle-builds/short-cli/migrations")
         .run(&pool)
         .await
         .expect("Failed to run migrations");

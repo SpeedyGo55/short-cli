@@ -1,9 +1,8 @@
-use std::fmt::format;
-use rocket::{post, get, routes, Data, Rocket, State};
-use rocket::http::{RawStr, Status};
+use nanoid::nanoid;
+use rocket::{post, get, routes, State};
+use rocket::http::Status;
 use rocket::response::{status, Redirect};
 use sqlx::{FromRow, PgPool};
-use uuid::Uuid;
 use url::Url;
 use serde::Serialize;
 
@@ -19,15 +18,17 @@ struct StoredURL {
 
 #[post("/shorten", data="<data>")]
 async fn shorten(data: String, state: &State<AppState>) -> Result<String, status::Custom<String>> {
-    let id = Uuid::new_v4();
+    let id = &nanoid!(10);
+
     let parsed_url = Url::parse(&data).map_err(|err| {
         status::Custom(
             Status::UnprocessableEntity,
             format!("url validation failed: {err}")
         )
     })?;
-    let result = sqlx::query("INSERT INTO urls (uuid, url) VALUES ($1, $2)")
-        .bind(id.into())
+
+    let _result = sqlx::query("INSERT INTO urls (uuid, url) VALUES ($1, $2)")
+        .bind(id)
         .bind(parsed_url.as_str())
         .execute(&state.pool)
         .await
@@ -37,13 +38,14 @@ async fn shorten(data: String, state: &State<AppState>) -> Result<String, status
                 "somethin went wrong, sowwy".into(),
             )
         })?;
+
     Ok(format!("https://short-cli.shuttleapp.rs/rec/{id}"))
 }
 
 #[get("/rec/<id>")]
 async fn recall(id: String, state: &State<AppState>) -> Result<Redirect, status::Custom<String>> {
     let url: StoredURL = sqlx::query_as("SELECT * FROM urls WHERE id = $1")
-        .bind(id.into())
+        .bind(id)
         .fetch_one(&state.pool)
         .await
         .map_err(|err| match err {
@@ -68,7 +70,9 @@ async fn main(#[shuttle_shared_db::Postgres] pool: PgPool) -> shuttle_rocket::Sh
 
     let state = AppState { pool };
 
-    let rocket = rocket::build().mount("/", routes![shorten]);
+    let rocket = rocket::build()
+        .mount("/", routes![shorten, recall])
+        .manage(state);
 
     Ok(rocket.into())
 }

@@ -27,7 +27,7 @@ async fn shorten(data: String, state: &State<AppState>) -> Result<String, status
         )
     })?;
 
-    let _result = sqlx::query("INSERT INTO urls (uuid, url) VALUES ($1, $2)")
+    let _result = sqlx::query("INSERT INTO urls (id, url) VALUES ($1, $2)")
         .bind(id)
         .bind(parsed_url.as_str())
         .execute(&state.pool)
